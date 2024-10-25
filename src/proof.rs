@@ -1,5 +1,4 @@
-use crate::node::{LeafNode, Node};
-use anyhow::Result;
+use crate::node::{bit_index, BranchNode, LeafNode, Node, NodeHash};
 use std::sync::Arc;
 
 /// Represents a merkle proof for a MS-SMT.
@@ -14,39 +13,25 @@ impl Proof {
     }
 
     /// Computes the root from the proof and the given leaf.
-    pub fn root(&self, _key: [u8; 32], _leaf: &LeafNode) -> Arc<dyn Node> {
-        // Implement walk up logic...
-        unimplemented!()
+    pub fn root(&self, key: [u8; 32], leaf: &LeafNode) -> Arc<dyn Node> {
+        let mut current_node: Arc<dyn Node> = Arc::new(leaf.clone());
+
+        for (height, sibling_node) in self.nodes.iter().enumerate() {
+            let bit = bit_index(height, &key);
+            let parent_node = if bit == 0 {
+                Arc::new(BranchNode::new(current_node.clone(), sibling_node.clone()))
+            } else {
+                Arc::new(BranchNode::new(sibling_node.clone(), current_node.clone()))
+            };
+            current_node = parent_node;
+        }
+
+        current_node
     }
 
-    /// Compresses the proof.
-    pub fn compress(&self) -> CompressedProof {
-        // Implement compression logic...
-        unimplemented!()
+    /// Verifies the proof against a given root hash.
+    pub fn verify(&self, key: [u8; 32], leaf: &LeafNode, root_hash: NodeHash) -> bool {
+        let computed_root = self.root(key, leaf);
+        computed_root.node_hash() == root_hash
     }
-}
-
-/// Represents a compressed merkle proof.
-pub struct CompressedProof {
-    pub bits: Vec<bool>,
-    pub nodes: Vec<Arc<dyn Node>>,
-}
-
-impl CompressedProof {
-    /// Decompresses the compressed proof.
-    pub fn decompress(&self) -> Result<Proof> {
-        // Implement decompression logic...
-        unimplemented!()
-    }
-}
-
-/// Verifies a merkle proof for the given leaf and root.
-pub fn verify_merkle_proof(
-    _key: [u8; 32],
-    _leaf: &LeafNode,
-    _proof: &Proof,
-    _root: &Arc<dyn Node>,
-) -> bool {
-    // Implement verification logic...
-    unimplemented!()
 }
