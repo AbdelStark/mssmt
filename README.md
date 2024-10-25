@@ -27,7 +27,7 @@ Add `mssmt` to your `Cargo.toml` dependencies:
 
 ```toml
 [dependencies]
-mssmt = "0.0.1"
+mssmt = "0.0.3"
 ```
 
 Or install via Cargo:
