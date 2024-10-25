@@ -9,6 +9,10 @@ A Rust implementation of a **Merkle-Sum Sparse Merkle Tree (MS-SMT)** data struc
 
 A Merkle-Sum Sparse Merkle Tree (MS-SMT) is a data structure that combines the features of a Merkle tree and a sum tree, allowing for efficient proofs of inclusion and accumulation of values. It's particularly useful for securely storing large amounts of data with the ability to verify the integrity and sum of the data efficiently.
 
+> ⚠️ This is a work in progress and the API is subject to change. It's an experimental implementation.
+>
+> ⚠️ Do not use in production or for anything serious.
+
 ## Features
 
 - **Efficient Storage**: Store and retrieve key-value pairs with associated sums efficiently.

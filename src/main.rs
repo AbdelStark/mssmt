@@ -20,6 +20,8 @@ fn main() -> Result<()> {
     // Insert the key-value-sum into the tree
     tree.insert(key1, value1.clone(), sum1)?;
     println!("Inserted key1 with value1 and sum1");
+    let merkle_root = tree.root()?;
+    println!("Merkle root: {:?}", merkle_root.node_hash());
 
     let key2 = to_array(&Sha256::digest(b"key2"));
     let value2 = b"value2".to_vec();
@@ -28,12 +30,18 @@ fn main() -> Result<()> {
     tree.insert(key2, value2.clone(), sum2)?;
     println!("Inserted key2 with value2 and sum2");
 
+    let merkle_root = tree.root()?;
+    println!("Merkle root: {:?}", merkle_root.node_hash());
+
     let key3 = to_array(&Sha256::digest(b"key3"));
     let value3 = b"value3".to_vec();
     let sum3 = 30;
 
     tree.insert(key3, value3.clone(), sum3)?;
     println!("Inserted key3 with value3 and sum3");
+
+    let merkle_root = tree.root()?;
+    println!("Merkle root: {:?}", merkle_root.node_hash());
 
     // Step 3: Fetch values and log the results
     println!("\nFetching values from the tree...");
@@ -102,6 +110,11 @@ fn main() -> Result<()> {
         "Proof verification for key1 after deletion: {}",
         is_valid_after
     );
+
+    // Step 9: Get the total sum of the tree
+    println!("\nGetting the total sum of the tree...");
+    let total = tree.total_sum()?;
+    println!("Total sum of the tree: {}", total);
 
     Ok(())
 }

@@ -262,6 +262,12 @@ impl<S: TreeStore> FullTree<S> {
 
         Ok(())
     }
+
+    /// Returns the total sum of all values in the tree.
+    pub fn total_sum(&self) -> Result<u64> {
+        let root = self.root()?;
+        Ok(root.node_sum())
+    }
 }
 
 #[cfg(test)]
@@ -383,6 +389,40 @@ mod tests {
             is_valid_after
         );
         assert!(is_valid_after);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_total_sum() -> Result<()> {
+        let store = DefaultStore::new();
+        let mut tree = FullTree::new(store);
+
+        let key1 = to_array(&Sha256::digest(b"key1"));
+        let value1 = b"value1".to_vec();
+        let sum1 = 10;
+        tree.insert(key1, value1.clone(), sum1)?;
+
+        let key2 = to_array(&Sha256::digest(b"key2"));
+        let value2 = b"value2".to_vec();
+        let sum2 = 20;
+        tree.insert(key2, value2.clone(), sum2)?;
+
+        let key3 = to_array(&Sha256::digest(b"key3"));
+        let value3 = b"value3".to_vec();
+        let sum3 = 30;
+        tree.insert(key3, value3.clone(), sum3)?;
+
+        // Check the total sum
+        let total = tree.total_sum()?;
+        assert_eq!(total, sum1 + sum2 + sum3);
+
+        // Delete one key
+        tree.delete(key2)?;
+
+        // Check the total sum after deletion
+        let total_after_delete = tree.total_sum()?;
+        assert_eq!(total_after_delete, sum1 + sum3);
 
         Ok(())
     }
