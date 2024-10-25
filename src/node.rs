@@ -1,3 +1,10 @@
+//! Node definitions and implementations for the Merkle-Sum Sparse Merkle Tree.
+//!
+//! This module contains the `Node` trait and concrete implementations for `LeafNode`, `BranchNode`, and `ComputedNode`.
+//!
+//! Nodes are the fundamental building blocks of the tree, representing both leaves (data entries) and branches (internal nodes).
+//! Each node maintains its own hash and sum, which are used for efficient proof generation and verification.
+
 use once_cell::sync::Lazy;
 use parking_lot::RwLock;
 use sha2::{Digest, Sha256};
@@ -38,7 +45,18 @@ impl fmt::Debug for NodeHash {
     }
 }
 
-/// Represents a node in the MS-SMT.
+/// A trait representing a node in the Merkle-Sum Sparse Merkle Tree.
+///
+/// Nodes can be either leaf nodes containing key-value-sum data or branch nodes pointing to child nodes.
+/// This trait defines the common interface for all node types.
+///
+/// # Required Methods
+///
+/// - `node_hash`: Returns the hash of the node.
+/// - `node_sum`: Returns the sum associated with the node.
+/// - `copy`: Creates a deep copy of the node.
+/// - `as_any`: Returns a reference to `Any` for downcasting purposes.
+
 pub trait Node: Send + Sync {
     /// Returns the hash of the node.
     fn node_hash(&self) -> NodeHash;
@@ -53,7 +71,28 @@ pub trait Node: Send + Sync {
     fn as_any(&self) -> &dyn Any;
 }
 
-/// Represents a leaf node in the MS-SMT.
+/// A leaf node in the Merkle-Sum Sparse Merkle Tree.
+///
+/// `LeafNode` represents the leaves of the tree and contains the actual key-value data and an associated sum.
+/// Each leaf node is identified by a unique key.
+///
+/// # Fields
+///
+/// - `key`: A 32-byte array representing the key.
+/// - `value`: A vector of bytes representing the value associated with the key.
+/// - `sum`: A 64-bit unsigned integer representing the sum associated with the key.
+///
+/// # Examples
+///
+/// ```rust
+/// use mssmt::node::LeafNode;
+///
+/// let key = [0u8; 32];
+/// let value = b"hello world".to_vec();
+/// let sum = 42;
+/// let leaf_node = LeafNode::new(key, value, sum);
+/// ```
+
 #[derive(Clone)]
 pub struct LeafNode {
     node_hash: Arc<RwLock<Option<NodeHash>>>,
@@ -124,7 +163,27 @@ impl Node for LeafNode {
 pub static EMPTY_LEAF_NODE: Lazy<LeafNode> =
     Lazy::new(|| LeafNode::new([0u8; HASH_SIZE], Vec::new(), 0));
 
-/// Represents a branch node in the MS-SMT.
+/// A branch node in the Merkle-Sum Sparse Merkle Tree.
+///
+/// `BranchNode` represents internal nodes in the tree, pointing to left and right child nodes.
+/// It maintains the combined hash and sum of its children.
+///
+/// # Fields
+///
+/// - `left`: An `Arc<dyn Node>` pointing to the left child node.
+/// - `right`: An `Arc<dyn Node>` pointing to the right child node.
+///
+/// # Examples
+///
+/// ```rust
+/// use mssmt::node::{BranchNode, LeafNode};
+/// use std::sync::Arc;
+///
+/// let left_leaf = Arc::new(LeafNode::new([0u8; 32], b"left".to_vec(), 10));
+/// let right_leaf = Arc::new(LeafNode::new([1u8; 32], b"right".to_vec(), 20));
+/// let branch_node = BranchNode::new(left_leaf, right_leaf);
+/// ```
+
 #[derive(Clone)]
 pub struct BranchNode {
     node_hash: Arc<RwLock<Option<NodeHash>>>,
@@ -241,7 +300,29 @@ pub static EMPTY_TREE: Lazy<Vec<Arc<dyn Node>>> = Lazy::new(|| {
     empty_tree
 });
 
-/// Returns the bit at a given index in the key.
+/// Returns the bit at a given index in a 32-byte key.
+///
+/// The bits are indexed from 0 (most significant bit) to 255 (least significant bit).
+///
+/// # Arguments
+///
+/// - `idx`: The bit index (0..256).
+/// - `key`: A reference to a 32-byte array representing the key.
+///
+/// # Returns
+///
+/// - `0` or `1` depending on the value of the bit at the given index.
+///
+/// # Examples
+///
+/// ```rust
+/// use mssmt::node::bit_index;
+///
+/// let key = [0b10101010u8; 32];
+/// let bit = bit_index(0, &key); // Most significant bit of the first byte
+/// assert_eq!(bit, 1);
+/// ```
+
 pub fn bit_index(idx: usize, key: &[u8; HASH_SIZE]) -> u8 {
     let byte_val = key[idx / 8];
     (byte_val >> (7 - (idx % 8))) & 1

@@ -1,6 +1,6 @@
 [package]
 name = "mssmt"
-version = "0.0.2"
+version = "0.0.3"
 authors = ["@AbdelStark <abdelstark@proton.me>"]
 edition = "2021"
 description = "A Rust implementation of a Merkle-Sum Sparse Merkle Tree (MS-SMT)"

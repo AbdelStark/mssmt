@@ -1,9 +1,29 @@
+//! Storage interfaces and default implementations for the Merkle-Sum Sparse Merkle Tree.
+//!
+//! This module defines the `TreeStore` trait, which specifies the storage backend interface for the tree,
+//! and provides the `DefaultStore`, an in-memory implementation suitable for testing and small datasets.
+
 use crate::node::{BranchNode, LeafNode, Node, NodeHash};
 use anyhow::Result;
 use std::collections::HashMap;
 use std::sync::Arc;
 
-/// Represents a generic database interface for the MS-SMT.
+/// A trait defining the storage backend interface for the Merkle-Sum Sparse Merkle Tree.
+///
+/// Implementors of this trait provide methods for storing and retrieving nodes in the tree.
+/// This abstraction allows the tree to use various storage mechanisms, such as in-memory stores, databases, or key-value stores.
+///
+/// # Required Methods
+///
+/// - `root_node`: Returns the root node of the tree.
+/// - `get_branch`: Retrieves a branch node by its hash.
+/// - `get_leaf`: Retrieves a leaf node by its hash.
+/// - `insert_branch`: Inserts or updates a branch node.
+/// - `insert_leaf`: Inserts or updates a leaf node.
+/// - `delete_branch`: Deletes a branch node.
+/// - `delete_leaf`: Deletes a leaf node.
+/// - `update_root`: Updates the root node.
+///
 pub trait TreeStore {
     /// Returns the root node of the tree.
     fn root_node(&self) -> Result<Arc<dyn Node>>;
@@ -30,7 +50,24 @@ pub trait TreeStore {
     fn update_root(&mut self, root: Arc<dyn Node>) -> Result<()>;
 }
 
-/// Default in-memory implementation of `TreeStore`.
+/// An in-memory implementation of `TreeStore` using hash maps.
+///
+/// `DefaultStore` is suitable for testing, examples, and small datasets.
+/// It stores nodes in memory using `HashMap` collections.
+///
+/// # Fields
+///
+/// - `branches`: A `HashMap` storing branch nodes indexed by their hash.
+/// - `leaves`: A `HashMap` storing leaf nodes indexed by their hash.
+/// - `root`: An optional root node of the tree.
+///
+/// # Examples
+///
+/// ```rust
+/// use mssmt::store::DefaultStore;
+///
+/// let store = DefaultStore::new();
+/// ```
 #[derive(Default)]
 pub struct DefaultStore {
     pub branches: HashMap<NodeHash, Arc<BranchNode>>,

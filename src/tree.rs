@@ -1,16 +1,52 @@
+//! The main Merkle-Sum Sparse Merkle Tree (MS-SMT) implementation.
+//!
+//! The `FullTree` struct provides methods for inserting, retrieving, deleting keys, generating proofs,
+//! and computing the total sum of the tree. It operates over a generic storage backend that implements
+//! the `TreeStore` trait.
+
 use crate::node::{bit_index, BranchNode, LeafNode, Node, EMPTY_LEAF_NODE, MAX_TREE_LEVELS};
 use crate::proof::Proof;
 use crate::store::TreeStore;
 use anyhow::Result;
 use std::sync::Arc;
 
-/// Represents a Merkle-Sum Sparse Merkle Tree (MS-SMT).
+/// A full Merkle-Sum Sparse Merkle Tree.
+///
+/// The `FullTree` struct provides an implementation of the MS-SMT over a storage backend.
+/// It allows for efficient storage and retrieval of key-value-sum entries, as well as generating and verifying Merkle proofs.
+///
+/// # Type Parameters
+///
+/// - `S`: The storage backend implementing the `TreeStore` trait.
+///
+/// # Examples
+///
+/// ```rust
+/// use mssmt::{DefaultStore, FullTree};
+///
+/// // Initialize a new tree with the default in-memory store
+/// let store = DefaultStore::new();
+/// let tree = FullTree::new(store);
+/// ```
 pub struct FullTree<S: TreeStore> {
     store: S,
 }
 
 impl<S: TreeStore> FullTree<S> {
-    /// Creates a new `FullTree` with the given store.
+    /// Creates a new `FullTree` with the given storage backend.
+    ///
+    /// # Arguments
+    ///
+    /// - `store`: An instance of a storage backend implementing the `TreeStore` trait.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use mssmt::{DefaultStore, FullTree};
+    ///
+    /// let store = DefaultStore::new();
+    /// let tree = FullTree::new(store);
+    /// ```
     pub fn new(store: S) -> Self {
         Self { store }
     }
@@ -20,7 +56,29 @@ impl<S: TreeStore> FullTree<S> {
         self.store.root_node()
     }
 
-    /// Inserts a key-value pair into the tree.
+    /// Inserts a key-value-sum entry into the tree.
+    ///
+    /// If the key already exists, its value and sum are updated.
+    ///
+    /// # Arguments
+    ///
+    /// - `key`: A 32-byte array representing the key.
+    /// - `value`: A vector of bytes representing the value associated with the key.
+    /// - `sum`: A 64-bit unsigned integer representing the sum associated with the key.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use mssmt::{DefaultStore, FullTree};
+    /// use mssmt::hash_utils::to_array;
+    /// use sha2::{Digest, Sha256};
+    ///
+    /// let mut tree = FullTree::new(DefaultStore::new());
+    /// let key = to_array(&Sha256::digest(b"key1"));
+    /// let value = b"value1".to_vec();
+    /// let sum = 10;
+    /// tree.insert(key, value, sum).unwrap();
+    /// ```
     pub fn insert(&mut self, key: [u8; 32], value: Vec<u8>, sum: u64) -> Result<()> {
         let leaf_node = Arc::new(LeafNode::new(key, value, sum));
 
@@ -136,7 +194,17 @@ impl<S: TreeStore> FullTree<S> {
         }
     }
 
-    /// Retrieves a value and sum associated with a key.
+    /// Retrieves the value and sum associated with a key.
+    ///
+    /// # Arguments
+    ///
+    /// - `key`: A 32-byte array representing the key to retrieve.
+    ///
+    /// # Returns
+    ///
+    /// - `Ok(Some((value, sum)))` if the key exists, where `value` is a `Vec<u8>` and `sum` is a `u64`.
+    /// - `Ok(None)` if the key does not exist.
+    ///
     pub fn get(&self, key: [u8; 32]) -> Result<Option<(Vec<u8>, u64)>> {
         let node = self.store.root_node()?;
         self.get_at_node(node, 0, &key)
@@ -171,6 +239,13 @@ impl<S: TreeStore> FullTree<S> {
     }
 
     /// Deletes a key from the tree.
+    ///
+    /// If the key does not exist, the tree remains unchanged.
+    ///
+    /// # Arguments
+    ///
+    /// - `key`: A 32-byte array representing the key to delete.
+    ///
     pub fn delete(&mut self, key: [u8; 32]) -> Result<()> {
         let root = self.store.root_node()?;
         let new_root = self.delete_at_node(root, 0, &key)?;
@@ -225,7 +300,17 @@ impl<S: TreeStore> FullTree<S> {
         }
     }
 
-    /// Generates a Merkle proof for a key.
+    /// Generates a Merkle proof for a given key.
+    ///
+    /// The proof can be used to verify the inclusion and sum of the key's value in the tree without having access to the entire tree.
+    ///
+    /// # Arguments
+    ///
+    /// - `key`: A 32-byte array representing the key for which to generate the proof.
+    ///
+    /// # Returns
+    ///
+    /// - A `Proof` struct containing the necessary nodes for verification.
     pub fn merkle_proof(&self, key: [u8; 32]) -> Result<Proof> {
         let node = self.store.root_node()?;
         let mut proof_nodes = Vec::new();
@@ -264,6 +349,11 @@ impl<S: TreeStore> FullTree<S> {
     }
 
     /// Returns the total sum of all values in the tree.
+    ///
+    /// # Returns
+    ///
+    /// - The sum of all `sum` values associated with the keys in the tree.
+    ///
     pub fn total_sum(&self) -> Result<u64> {
         let root = self.root()?;
         Ok(root.node_sum())
