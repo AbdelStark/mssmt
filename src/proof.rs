@@ -35,14 +35,6 @@ impl Proof {
     /// Verifies the proof against a given root hash.
     pub fn verify(&self, key: [u8; 32], leaf: &LeafNode, root_hash: NodeHash) -> bool {
         let computed_root = self.root(key, leaf);
-        let is_valid = computed_root.node_hash() == root_hash;
-        if !is_valid {
-            println!("Expected root hash: {:?}", root_hash);
-            println!(
-                "Computed root hash from proof: {:?}",
-                computed_root.node_hash()
-            );
-        }
-        is_valid
+        computed_root.node_hash() == root_hash
     }
 }
