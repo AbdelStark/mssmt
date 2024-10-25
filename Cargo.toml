@@ -1,0 +1,10 @@
+[package]
+name = "mssmt"
+version = "0.0.1"
+edition = "2021"
+
+[dependencies]
+once_cell = "1.17"
+sha2 = "0.10"
+hex = "0.4"
+anyhow = "1.0.91"
