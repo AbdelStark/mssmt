@@ -254,6 +254,10 @@ impl<S: TreeStore> FullTree<S> {
                 proof_nodes.push(branch_node.left.clone());
                 self.generate_proof(branch_node.right.clone(), height + 1, key, proof_nodes)?;
             }
+        } else {
+            // Push default empty node as sibling if no branch node exists
+            proof_nodes.push(Arc::new(crate::node::EMPTY_LEAF_NODE.clone()));
+            self.generate_proof(node.clone(), height + 1, key, proof_nodes)?;
         }
 
         Ok(())
